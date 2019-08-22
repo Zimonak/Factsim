@@ -21,45 +21,99 @@ class Combinator:
         self.input_signal2 = Signal("IN2")
             
         self.output_signal = Signal(out_id)
+        #Unique object's ID
+        self.id = id(self)
 
     def performFunction(self):
-        # Contains all the functions that Arithmetic and Decider comb. can do
-        # List of allowed functions is defined on init
-        # ToDo: Take into account input_signals!
-        try:
-            a = self.param1.value
+        """
+        Contains all the functions that Arithmetic and Decider comb. can do.
+        List of allowed functions is defined on init.
+        This method is only called on request.
+        """
+
+        # When it is detected that we have same inputs as parameters, use the input values for calculations
+        # Looks ugly, but works...PLEASE REWRITE for MAINTAINABILITY!
+
+        input_signals_list = [self.input_signal1, self.input_signal2]
+        input_signals_ids = list(map(lambda x: x.s_id, input_signals_list)) #['IN1', 'IN2']
+
+        if self.param1.s_id in input_signals_ids:
+            #wtf, dude, do you even understand...?
+            a = input_signals_list[input_signals_ids.index(self.param1.s_id)].value
+
+        # Special signal for param2 ("int",value)| Represents the pure integer or i.e [A + 4]
+        if self.param2.s_id == 'int':
             b = self.param2.value
+        elif self.param2.s_id in input_signals_ids:
+            b = input_signals_list[input_signals_ids.index(self.param2.s_id)].value
+            
+        #Make sure that we have all the variables
+        try:
+            a
+            b
         except NameError:
-            print("ERROR: No parameters have been defined")
+            print("WARNING: No inputs matching to parameters were found")
             return
+        #---
+  
+        ops = {"add": (lambda x, y: x + y),
+               "+": (lambda x, y: x + y),
+               "subtract": (lambda x, y: x - y),
+               "-": (lambda x, y: x - y),
+               "multiply": (lambda x, y: x * y),
+               "*": (lambda x, y: x * y),
+               "divide": (lambda x, y: x / y),
+               "/": (lambda x, y: x / y),
+               "modulo": (lambda x, y: x % y),
+               "%": (lambda x, y: x % y),
+               "exp": (lambda x, y: x ** y),
 
-        #--------------------------
-        #ToDO: If input_signal==param then param.value=input_signal.value
-        #--------------------------    
-        
-        if self.function == "add" or self.function == "+":
-            self.output_signal.value = a + b
-        if self.function == "subtract"or self.function == "/":
-            self.output_signal.value = a - b
-        if self.function == "multiply" or self.function == "*":
-            self.output_signal.value = a * b
+               "L bitS": (lambda x, y: x << y),
+               "<<": (lambda x, y: x << y),
+               "R bitS": (lambda x, y: x >> y),
+               " >> ": (lambda x, y: x >> y),
+               "AND": (lambda x, y: x & y),
+               "&": (lambda x, y: x & y),
+               "OR": (lambda x, y: x | y),
+               "|": (lambda x, y: x | y),
+               "XOR": (lambda x, y: x ^ y),
+               "^": (lambda x, y: x ^ y),
+               
+               ">": (lambda x, y: x > y),
+               "<": (lambda x, y: x < y),
+               "=": (lambda x, y: x == y),
+               ">=": (lambda x, y: x >= y),
+               "<=": (lambda x, y: x <= y),
+               "!=": (lambda x, y: x != y),
+               }
+        result = ops[self.function](a, b)
+        if result == True:
+            self.output_signal.value = 1
+        elif result == False:
+            self.output_signal.value = 0
+        else:
+            self.output_signal.value = result
 
-    #ToDo: Is this funct required? a la b.param1 = ...
     def assignParameter(self, p_number, s_id, value = 0):
-        #Function to change the parameter values
-        #ToDo: switch statement
-        if self.c_type == "Constant":
-            return print("ERROR: Can't assign input parameters to Constant Combinator")
-        if p_number > 2:
-            return print("ERROR: Incorrect parameter number. Choose 1 or 2.")
+        #Function to change the parameter values     
         if p_number == 1:
             self.param1 = Signal(s_id, value)
-        else:
+        elif p_number == 2:
             self.param2 = Signal(s_id, value)
+        else:
+            print("ERROR: Incorrect parameter number. Choose 1 or 2.")
+
+    def assignInput(self, input_nr, s_id, value):
+        #Function to change the input values 
+        if input_nr == 1:
+            self.input_signal1 = Signal(s_id, value)
+        elif input_nr == 2:
+            self.input_signal2 = Signal(s_id, value)
+        else:
+            print("ERROR: Incorrect input number. Choose 1 or 2.")
             
-    #ToDo: Is this funct required?
-    def assignOutputSignal(self, s_id, value):
-        #Reserved for special manipulation only!
+    def assignOutput(self, s_id, value):
+        #Function to change the output values 
         self.output_signal = Signal(s_id, value)
 
     def showInfo(self):
@@ -72,8 +126,8 @@ class ArithmeticCombinator(Combinator):
     def __init__(self, function, param1_id, param2_id, out_id):
         super().__init__(function, param1_id, param2_id, out_id)
         
-        allowed_functions = ['add', '+', 'subtract', '-', 'multiply', '*', 'divide', '/', 'modulo', '%', 'exp','^',
-                             'L bitS', '<<', 'R bitS', '>>', 'AND', '&', 'OR', '|', 'XOR']
+        allowed_functions = ['add', '+', 'subtract', '-', 'multiply', '*', 'divide', '/', 'modulo', '%', 'exp',
+                             'L bitS', '<<', 'R bitS', '>>', 'AND', '&', 'OR', '|', 'XOR', '^',]
         if self.function not in allowed_functions:
             raise Exception("ERROR: This Function is not allowed for this combinator")
 
@@ -106,6 +160,9 @@ class ConstantCombinator(Combinator):
     def performFunction(self):
         print("ERROR: Not allowed for Constant combinator.")
 
+    def assignInput(self):
+        print("ERROR: Not allowed for Constant combinator.")
+
     def showInfo(self):
         print("Type: Constant combinator")
         print(f"Param1: {self.param1.s_id}={self.param1.value}")
@@ -130,10 +187,13 @@ class Network:
     #
     # NB! Combinators/Objects OUTput = Networks's INput!!
     def __init__(self):
-        self.data = {'input':{}, 'output':{}}
+        self.data = {'input':{}, 'output':{}}    
         #  data = {'input':{'A': [10, 5, 8], 'B': [1, 2, 3]},'output':{}}
         #  ref: network1["input"]["A"]
         #  sum: sum(network1["input"]["A"])              :)
+
+        #Unique object's ID
+        self.id = id(self)
         
     def addInput(self, s_id, value):
         #s_id: signal's id, value: signals value
@@ -157,19 +217,54 @@ class Network:
         print(f"Network id: xxxx \nInput: {n.data['input']} \nOutput: {n.data['output']}")
         pass
 
-#Testing only!
-a = ArithmeticCombinator("add","A","B","X")
+#Testing only! <<<< move to pytests folder
+print("Original Arithmetic:")
+a = ArithmeticCombinator("add","L","B","X")
+a.showInfo()
+print()
+a.assignInput(1,"A",200)
+a.assignInput(2,"L",25)
+a.assignParameter(2, "int", 99)
+a.performFunction()
+a.showInfo()
+print()
+a.assignInput(1,"L",11)
+a.assignInput(2,"C",21)
+a.assignParameter(2, "int", 10)
+a.performFunction()
+a.showInfo()
+print()
+a.assignInput(1,"R",333)
+a.assignInput(2,"T",222)
+a.assignParameter(1, "T")
+a.assignParameter(2, "R")
+a.performFunction()
 a.showInfo()
 
+print()
+print("Original Decider:")
+b = DeciderCombinator(">","D","L","Ö")
+b.showInfo()
+print()
+b.assignInput(1,"A",200)
+b.assignInput(2,"D",25)
+b.assignParameter(2, "int", 99)
+b.performFunction()
+b.showInfo()
+print()
+b.assignInput(1,"D",11)
+b.assignInput(2,"C",21)
+b.assignParameter(2, "int", 10)
+b.performFunction()
+b.showInfo()
+print()
+b.assignInput(1,"R",333)
+b.assignInput(2,"T",222)
+b.assignParameter(1, "T")
+b.assignParameter(2, "R")
+b.performFunction()
+b.showInfo()
     
-#a = Combinator("Constant")
-#b = Combinator("Arithmetic","+","I","J","FF")
-#c = Combinator("Arithmetic","/","R","S","GG")
-#b.showInfo()
-#print()
-#c.showInfo()
-#print()
-
 #n = Network()
 
 #n.addInput(b.output_signal.s_id,b.output_signal.value)
