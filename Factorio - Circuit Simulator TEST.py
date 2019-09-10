@@ -2,9 +2,9 @@ class Combinator:
     # Generic Combinator class
     # Three combinator types supported are: Constant, Arithmetic,Decider|ToDo:tests, tests, finalize
     #
-    #   input_signal1->|------------------------|
-    #                  | param1;Function;param2 |->output_signal
-    #   input_signal2->|------------------------|
+    # [List if inputs]   input_signal1->|------------------------|
+    #                  ?                | param1;Function;param2 |->output_signal or [output_signals]
+    # [List if inputs]   input_signal2->|------------------------|
     #
     #NB this class is never meant to be called independently!
     
@@ -16,7 +16,9 @@ class Combinator:
         self.param2 = Signal(param2_id)
         self.function = function
         
-        #Input signals are assigned by other objects
+        # Input signals are assigned by other objects - INCORRECT
+        # Combinator receives ALL the signals from the connected network, but functions /
+        # only when input matches parameters. Exception: Constants(integers)
         self.input_signal1 = Signal("IN1")
         self.input_signal2 = Signal("IN2")
             
